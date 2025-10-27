@@ -109,28 +109,30 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Print from memory to verify
-  printf("\n--- Verifying content from memory table ---\n");
+  // Print table content in CSV-like format
+  printf("\n--- Table content from memory ---\n"); // Changed message
   for (size_t row = 0; row < rows; ++row) {
     for (size_t col = 0; col < cols; ++col) {
       Cell *current_cell = table_get_cell(table, row, col);
       if (current_cell != NULL) {
         switch (current_cell->type) {
         case CELL_TYPE_TEXT:
-          printf("Cell[%zu, %zu]: " SV_Fmt "\n", row, col,
-                 SV_Arg(current_cell->as.text));
+          printf(SV_Fmt, SV_Arg(current_cell->as.text));
           break;
         case CELL_TYPE_NUMBER:
-          printf("Cell[%zu, %zu]: %f\n", row, col,
-                 current_cell->as.number);
+          printf("%f", current_cell->as.number);
           break;
         case CELL_TYPE_EXPR:
-          // For now, just indicate it's an expression
-          printf("Cell[%zu, %zu]: <expression>\n", row, col);
+          // For now, still print <expression>, will be updated later
+          printf("<expression>");
           break;
         }
       }
+      if (col < cols - 1) { // Don't print delimiter after the last column
+        printf("|");
+      }
     }
+    printf("\n"); // Newline after each row
   }
 
   table_free(table);
