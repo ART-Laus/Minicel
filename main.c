@@ -5,6 +5,7 @@
 
 #include "cell.h"
 #include "table.h"
+#include "parser.h"
 
 #define SV_IMPLEMENTATION
 #include "string_view.h"
@@ -103,8 +104,7 @@ int main(int argc, char **argv) {
       }
       Cell *current_cell = table_get_cell(table, row, col);
       if (current_cell != NULL) {
-        current_cell->type = CELL_TYPE_TEXT;
-        current_cell->as.text = cell_sv;
+        parse_cell_content(cell_sv, current_cell);
       }
     }
   }

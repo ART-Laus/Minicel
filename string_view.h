@@ -17,6 +17,7 @@ typedef struct {
 
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
+String_View sv_chop_left(String_View *sv, size_t n);
 
 #endif // STRING_VIEW_H_
 
@@ -61,6 +62,14 @@ String_View sv_chop_by_delim(String_View *sv, char delim) {
   }
 
   return result;
+}
+
+String_View sv_chop_left(String_View *sv, size_t n) {
+    if (n > sv->count) n = sv->count;
+    String_View result = {.count = n, .data = sv->data};
+    sv->data += n;
+    sv->count -= n;
+    return result;
 }
 
 #endif // SV_IMPLEMENTATION
