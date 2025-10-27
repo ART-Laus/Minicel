@@ -83,6 +83,7 @@ int main(int argc, char **argv) {
             rows, cols);
     exit(1);
   }
+  memset(table, 0, rows * cols * sizeof(Cell));
 
   // Reset input String_View as estimate_table_size consumes it
   input.count = content_size;
