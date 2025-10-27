@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "cell.h"
+#include "table.h"
 
 #define SV_IMPLEMENTATION
 #include "string_view.h"
@@ -77,13 +78,12 @@ int main(int argc, char **argv) {
   printf("Table size: %zu rows, %zu cols\n", rows, cols);
 
   // Allocate table
-  Cell *table = malloc(rows * cols * sizeof(Cell));
+  Table *table = table_create(rows, cols);
   if (table == NULL) {
     fprintf(stderr, "ERROR: Not enough memory for a table of size %zu x %zu\n",
             rows, cols);
     exit(1);
   }
-  memset(table, 0, rows * cols * sizeof(Cell));
 
   // Reset input String_View as estimate_table_size consumes it
   input.count = content_size;
@@ -101,8 +101,11 @@ int main(int argc, char **argv) {
         cell_sv.count = 0;
         cell_sv.data = "";
       }
-      table[row * cols + col].type = CELL_TYPE_TEXT;
-      table[row * cols + col].as.text = cell_sv;
+      Cell *current_cell = table_get_cell(table, row, col);
+      if (current_cell != NULL) {
+        current_cell->type = CELL_TYPE_TEXT;
+        current_cell->as.text = cell_sv;
+      }
     }
   }
 
@@ -110,24 +113,27 @@ int main(int argc, char **argv) {
   printf("\n--- Verifying content from memory table ---\n");
   for (size_t row = 0; row < rows; ++row) {
     for (size_t col = 0; col < cols; ++col) {
-      switch (table[row * cols + col].type) {
-      case CELL_TYPE_TEXT:
-        printf("Cell[%zu, %zu]: " SV_Fmt "\n", row, col,
-               SV_Arg(table[row * cols + col].as.text));
-        break;
-      case CELL_TYPE_NUMBER:
-        printf("Cell[%zu, %zu]: %f\n", row, col,
-               table[row * cols + col].as.number);
-        break;
-      case CELL_TYPE_EXPR:
-        // For now, just indicate it's an expression
-        printf("Cell[%zu, %zu]: <expression>\n", row, col);
-        break;
+      Cell *current_cell = table_get_cell(table, row, col);
+      if (current_cell != NULL) {
+        switch (current_cell->type) {
+        case CELL_TYPE_TEXT:
+          printf("Cell[%zu, %zu]: " SV_Fmt "\n", row, col,
+                 SV_Arg(current_cell->as.text));
+          break;
+        case CELL_TYPE_NUMBER:
+          printf("Cell[%zu, %zu]: %f\n", row, col,
+                 current_cell->as.number);
+          break;
+        case CELL_TYPE_EXPR:
+          // For now, just indicate it's an expression
+          printf("Cell[%zu, %zu]: <expression>\n", row, col);
+          break;
+        }
       }
     }
   }
 
-  free(table);
+  table_free(table);
   free(content);
   return 0;
 }
