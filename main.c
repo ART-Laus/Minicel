@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cell.h"
+
 #define SV_IMPLEMENTATION
 #include "string_view.h"
 
@@ -74,15 +76,57 @@ int main(int argc, char **argv) {
   estimate_table_size(input, &rows, &cols);
   printf("Table size: %zu rows, %zu cols\n", rows, cols);
 
-  for (size_t row = 0; input.count > 0; ++row) {
+  // Allocate table
+  Cell *table = malloc(rows * cols * sizeof(Cell));
+  if (table == NULL) {
+    fprintf(stderr, "ERROR: Not enough memory for a table of size %zu x %zu\n",
+            rows, cols);
+    exit(1);
+  }
+
+  // Reset input String_View as estimate_table_size consumes it
+  input.count = content_size;
+  input.data = content;
+
+  // Parse and fill the table
+  for (size_t row = 0; row < rows; ++row) {
     String_View line = sv_chop_by_delim(&input, '\n');
-    for (size_t col = 0; line.count > 0; ++col) {
-      String_View cell = sv_trim(sv_chop_by_delim(&line, '|'));
-      printf("%s:%zu:%zu: " SV_Fmt "\n", input_file_path, row + 1, col + 1,
-             SV_Arg(cell));
+    for (size_t col = 0; col < cols; ++col) {
+      String_View cell_sv;
+      if (line.count > 0) {
+        cell_sv = sv_trim(sv_chop_by_delim(&line, '|'));
+      } else {
+        // Handle ragged rows by filling with empty content
+        cell_sv.count = 0;
+        cell_sv.data = "";
+      }
+      table[row * cols + col].type = CELL_TYPE_TEXT;
+      table[row * cols + col].as.text = cell_sv;
     }
   }
 
+  // Print from memory to verify
+  printf("\n--- Verifying content from memory table ---\n");
+  for (size_t row = 0; row < rows; ++row) {
+    for (size_t col = 0; col < cols; ++col) {
+      switch (table[row * cols + col].type) {
+      case CELL_TYPE_TEXT:
+        printf("Cell[%zu, %zu]: " SV_Fmt "\n", row, col,
+               SV_Arg(table[row * cols + col].as.text));
+        break;
+      case CELL_TYPE_NUMBER:
+        printf("Cell[%zu, %zu]: %f\n", row, col,
+               table[row * cols + col].as.number);
+        break;
+      case CELL_TYPE_EXPR:
+        // For now, just indicate it's an expression
+        printf("Cell[%zu, %zu]: <expression>\n", row, col);
+        break;
+      }
+    }
+  }
+
+  free(table);
   free(content);
   return 0;
 }
